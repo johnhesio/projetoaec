@@ -8,17 +8,10 @@ import {
   Menu,
   X,
 } from "lucide-react"
+import { Link } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { Stamp } from "@/components/Stamp"
-
-const ESPECIALIDADES = [
-  "Cardiologia",
-  "Dermatologia",
-  "Psiquiatria",
-  "Pediatria",
-  "Ginecologia",
-  "Ortopedia",
-]
+import { ESPECIALIDADES } from "@/lib/especialidades"
 
 const PASSOS_PACIENTE = [
   {
@@ -96,8 +89,13 @@ function Home() {
             </a>
           </nav>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" className="font-data text-xs">
-              Entrar
+            <Button
+              asChild
+              variant="outline"
+              size="sm"
+              className="font-data text-xs"
+            >
+              <Link to="/entrar">Entrar</Link>
             </Button>
             <button
               type="button"
@@ -161,13 +159,17 @@ function Home() {
                 só lugar — para quem cuida e para quem é cuidado.
               </p>
               <div className="mt-9 flex flex-col gap-3 sm:flex-row">
-                <Button size="lg" className="gap-2">
-                  <Search className="size-4" />
-                  Buscar especialista
+                <Button asChild size="lg" className="gap-2">
+                  <Link to="/paciente">
+                    <Search className="size-4" />
+                    Buscar especialista
+                  </Link>
                 </Button>
-                <Button size="lg" variant="outline" className="gap-2">
-                  <Stethoscope className="size-4" />
-                  Sou profissional de saúde
+                <Button asChild size="lg" variant="outline" className="gap-2">
+                  <Link to="/profissional">
+                    <Stethoscope className="size-4" />
+                    Sou profissional de saúde
+                  </Link>
                 </Button>
               </div>
             </div>
