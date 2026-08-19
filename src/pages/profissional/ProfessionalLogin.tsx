@@ -1,10 +1,32 @@
-import { Link } from "react-router-dom"
+import { useState } from "react"
+import type { FormEvent } from "react"
+import { Link, useNavigate } from "react-router-dom"
 import { AuthCard } from "@/components/layout/AuthCard"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { signInProfissional, traduzErro } from "@/lib/auth"
 
 function ProfessionalLogin() {
+  const [email, setEmail] = useState("")
+  const [senha, setSenha] = useState("")
+  const [erro, setErro] = useState<string | null>(null)
+  const [enviando, setEnviando] = useState(false)
+  const navigate = useNavigate()
+
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault()
+    setErro(null)
+    setEnviando(true)
+    const { error } = await signInProfissional(email, senha)
+    setEnviando(false)
+    if (error) {
+      setErro(traduzErro(error.message))
+      return
+    }
+    navigate("/profissional/painel")
+  }
+
   return (
     <AuthCard
       eyebrow="Área do profissional"
@@ -13,13 +35,17 @@ function ProfessionalLogin() {
       backTo="/profissional"
       backLabel="Área do profissional"
     >
-      <form
-        className="grid gap-5"
-        onSubmit={(e) => e.preventDefault()}
-      >
+      <form className="grid gap-5" onSubmit={handleSubmit}>
         <div className="grid gap-2">
           <Label htmlFor="prof-email">E-mail</Label>
-          <Input id="prof-email" type="email" autoComplete="username" required />
+          <Input
+            id="prof-email"
+            type="email"
+            autoComplete="username"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
         </div>
         <div className="grid gap-2">
           <Label htmlFor="prof-senha">Senha</Label>
@@ -27,11 +53,14 @@ function ProfessionalLogin() {
             id="prof-senha"
             type="password"
             autoComplete="current-password"
+            value={senha}
+            onChange={(e) => setSenha(e.target.value)}
             required
           />
         </div>
-        <Button type="submit" className="mt-1">
-          Entrar
+        {erro && <p className="text-sm text-destructive">{erro}</p>}
+        <Button type="submit" className="mt-1" disabled={enviando}>
+          {enviando ? "Entrando…" : "Entrar"}
         </Button>
       </form>
 

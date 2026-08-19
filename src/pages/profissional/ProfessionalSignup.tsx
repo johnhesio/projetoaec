@@ -1,6 +1,6 @@
 import { useState, useRef } from "react"
-import type { ChangeEvent } from "react"
-import { Link } from "react-router-dom"
+import type { ChangeEvent, FormEvent } from "react"
+import { Link, useNavigate } from "react-router-dom"
 import { Camera } from "lucide-react"
 import { AuthCard } from "@/components/layout/AuthCard"
 import { Button } from "@/components/ui/button"
@@ -8,23 +8,32 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Chip } from "@/components/Chip"
 import { ESPECIALIDADES } from "@/lib/especialidades"
+import { signUpProfissional, traduzErro } from "@/lib/auth"
 
 const CONSELHOS = ["CRM", "CRO", "CRP", "COREN", "CREFITO"]
 const SERVICOS = ["Consulta", "Retorno", "Telemedicina", "Laudo", "Segunda opinião"]
 
 function ProfessionalSignup() {
-  const [foto, setFoto] = useState<string | null>(null)
+  const [fotoFile, setFotoFile] = useState<File | null>(null)
+  const [fotoPreview, setFotoPreview] = useState<string | null>(null)
+  const [nome, setNome] = useState("")
+  const [email, setEmail] = useState("")
+  const [senha, setSenha] = useState("")
   const [especialidade, setEspecialidade] = useState<string | null>(null)
   const [conselho, setConselho] = useState("CRM")
+  const [conselhoNumero, setConselhoNumero] = useState("")
   const [servicos, setServicos] = useState<string[]>([])
+  const [erro, setErro] = useState<string | null>(null)
+  const [aviso, setAviso] = useState<string | null>(null)
+  const [enviando, setEnviando] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const navigate = useNavigate()
 
   function handleFoto(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
-    const reader = new FileReader()
-    reader.onload = () => setFoto(reader.result as string)
-    reader.readAsDataURL(file)
+    setFotoFile(file)
+    setFotoPreview(URL.createObjectURL(file))
   }
 
   function toggleServico(servico: string) {
@@ -33,6 +42,44 @@ function ProfessionalSignup() {
         ? atual.filter((s) => s !== servico)
         : [...atual, servico]
     )
+  }
+
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault()
+    setErro(null)
+    setAviso(null)
+
+    if (!especialidade) {
+      setErro("Escolha sua especialidade.")
+      return
+    }
+    if (servicos.length === 0) {
+      setErro("Escolha ao menos um serviço oferecido.")
+      return
+    }
+
+    setEnviando(true)
+    const { data, error } = await signUpProfissional({
+      nome,
+      email,
+      especialidade,
+      conselhoTipo: conselho,
+      conselhoNumero,
+      servicos,
+      senha,
+      foto: fotoFile,
+    })
+    setEnviando(false)
+
+    if (error) {
+      setErro(traduzErro(error.message))
+      return
+    }
+    if (!data.session) {
+      setAviso("Cadastro criado. Confirme seu e-mail para entrar.")
+      return
+    }
+    navigate("/profissional/painel")
   }
 
   return (
@@ -44,7 +91,7 @@ function ProfessionalSignup() {
       backLabel="Área do profissional"
       wide
     >
-      <form className="grid gap-6" onSubmit={(e) => e.preventDefault()}>
+      <form className="grid gap-6" onSubmit={handleSubmit}>
         <div className="flex items-center gap-4">
           <button
             type="button"
@@ -52,9 +99,9 @@ function ProfessionalSignup() {
             className="flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-dashed border-linha bg-paper text-ink-muted transition-colors hover:border-carimbo/50"
             aria-label="Adicionar foto de perfil"
           >
-            {foto ? (
+            {fotoPreview ? (
               <img
-                src={foto}
+                src={fotoPreview}
                 alt="Prévia da foto de perfil"
                 className="size-full object-cover"
               />
@@ -78,11 +125,24 @@ function ProfessionalSignup() {
         <div className="grid gap-5 sm:grid-cols-2">
           <div className="grid gap-2">
             <Label htmlFor="prof-nome">Nome completo</Label>
-            <Input id="prof-nome" autoComplete="name" required />
+            <Input
+              id="prof-nome"
+              autoComplete="name"
+              value={nome}
+              onChange={(e) => setNome(e.target.value)}
+              required
+            />
           </div>
           <div className="grid gap-2">
             <Label htmlFor="prof-email">E-mail</Label>
-            <Input id="prof-email" type="email" autoComplete="email" required />
+            <Input
+              id="prof-email"
+              type="email"
+              autoComplete="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
           </div>
         </div>
 
@@ -123,6 +183,8 @@ function ProfessionalSignup() {
             <Input
               id="prof-conselho-numero"
               placeholder={`${conselho}-SP 123.456`}
+              value={conselhoNumero}
+              onChange={(e) => setConselhoNumero(e.target.value)}
               required
             />
           </div>
@@ -149,6 +211,9 @@ function ProfessionalSignup() {
             id="prof-senha"
             type="password"
             autoComplete="new-password"
+            minLength={6}
+            value={senha}
+            onChange={(e) => setSenha(e.target.value)}
             required
           />
         </div>
@@ -158,8 +223,11 @@ function ProfessionalSignup() {
           verificação. Validamos os dados antes de ativar sua agenda.
         </p>
 
-        <Button type="submit" className="mt-1">
-          Criar cadastro
+        {erro && <p className="text-sm text-destructive">{erro}</p>}
+        {aviso && <p className="text-sm text-vital">{aviso}</p>}
+
+        <Button type="submit" className="mt-1" disabled={enviando}>
+          {enviando ? "Criando cadastro…" : "Criar cadastro"}
         </Button>
       </form>
 
