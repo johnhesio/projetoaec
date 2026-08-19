@@ -102,6 +102,11 @@ create trigger on_auth_user_created
   after insert on auth.users
   for each row execute procedure public.handle_new_user();
 
+-- Triggers run with the function owner's privileges regardless of grants,
+-- so this only blocks calling it directly as a public API endpoint
+-- (PostgREST exposes every function in `public` as /rpc/<nome>).
+revoke execute on function public.handle_new_user() from public, anon, authenticated;
+
 -- ============================================================
 -- Row Level Security
 -- ============================================================
