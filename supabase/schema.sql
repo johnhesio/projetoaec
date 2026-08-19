@@ -159,8 +159,9 @@ insert into storage.buckets (id, name, public)
 values ('avatares', 'avatares', true)
 on conflict (id) do nothing;
 
-create policy "Leitura pública de avatares" on storage.objects
-  for select using (bucket_id = 'avatares');
+-- Sem política de SELECT: o bucket já é público, então getPublicUrl() serve
+-- os objetos direto por URL sem passar pela RLS. Uma política de SELECT aqui
+-- só habilitaria listar/enumerar todos os arquivos via API, sem necessidade.
 create policy "Usuário envia seu próprio avatar" on storage.objects
   for insert with check (
     bucket_id = 'avatares' and auth.uid()::text = (storage.foldername(name))[1]
